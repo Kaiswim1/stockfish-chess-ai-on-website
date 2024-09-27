@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stockfish Chess Engine</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #inputContainer {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Stockfish Chess Engine</h1>
+  <pre id="output"></pre>
+  
+  <div id="inputContainer">
+    <input type="text" id="userMoveInput" placeholder="Enter a move e.g. e2e4">
+    <button id="submitMoveButton">Submit Move</button>
+  </div>
+
+  <script src="stockfish.js"></script>
+  <script>
+    const engine = new Worker('stockfish.js');  // Create a Web Worker for Stockfish
+    const output = document.getElementById('output');
+    const userMoveInput = document.getElementById('userMoveInput');
+    const submitMoveButton = document.getElementById('submitMoveButton');
+    let moves = [];  // Array of moves to be added to the game   
+
+    // Function to handle Stockfish engine output
+    engine.onmessage = function(event) {  
+      // Display Stockfish output in the output element 
+
+      // Check for bestmove indication
+      if (event.data.includes("bestmove")) {   
+        moves.push(event.data.substring(9, 13));
+        output.textContent += moves + '\n'; 
+        //output.textContent += event.data + '\n';  
+        userMoveInput.value = ''; // Clear the input field
+      }
+    };
+
+    // Function to start analysis from the position with moves
+    function startAnalysis() {
+      let positionCommand = 'position startpos';  // Start position
+      if (moves.length > 0) {
+        positionCommand += ' moves ' + moves.join(' ');  // Add moves
+      }
+      engine.postMessage('uci');  // Set UCI mode
+      engine.postMessage(positionCommand);  // Set the position with moves
+      engine.postMessage('go depth 10');  // Start analysis with depth 10  
+    }
+
+    // Function to handle move submission
+    function submitMove() {
+      const userMove = userMoveInput.value.trim(); // Get user input
+      if (userMove) {
+        moves.push(userMove);
+        startAnalysis();  // Start analysis after getting user input
+      }
+    }
+
+    // Attach event listener to button
+    submitMoveButton.addEventListener('click', submitMove);
+
+    // Start the first analysis when the script loads
+    userMoveInput.focus(); // Focus on the input for the first move
+  
+  </script>
+</body>
+</html>
